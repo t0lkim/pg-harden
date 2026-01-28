@@ -1,0 +1,33 @@
+[package]
+name = "pg-harden"
+version = "0.1.0"
+edition = "2024"
+authors = ["Mike Lott"]
+description = "PostgreSQL security hardening scanner"
+license = "MIT"
+repository = "https://github.com/mlott/pg-harden"
+keywords = ["postgresql", "security", "scanner", "hardening"]
+categories = ["command-line-utilities", "database"]
+
+[dependencies]
+clap = { version = "4.5", features = ["derive", "env"] }
+tokio = { version = "1.49", features = ["rt-multi-thread", "macros", "fs"] }
+tokio-postgres = { version = "0.7", features = ["with-serde_json-1"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+colored = "3.0"
+thiserror = "2.0"
+anyhow = "1.0"
+async-trait = "0.1"
+
+[dev-dependencies]
+tempfile = "3.15"
+
+[[bin]]
+name = "pg-harden"
+path = "src/main.rs"
+
+[profile.release]
+lto = true
+strip = true
