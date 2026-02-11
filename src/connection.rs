@@ -2,9 +2,45 @@ use crate::cli::ScanArgs;
 use crate::error::ConnectionError;
 use tokio_postgres::{Client, NoTls};
 
-/// Establish connection to PostgreSQL
-pub async fn connect(args: &ScanArgs, verbose: bool) -> Result<Client, ConnectionError> {
-    let config = build_connection_string(args);
+/// Connection parameters for a single target.
+pub struct ConnectParams<'a> {
+    pub host: &'a str,
+    pub port: u16,
+    pub user: &'a str,
+    pub password: Option<&'a str>,
+    pub database: &'a str,
+    pub timeout: u64,
+}
+
+impl<'a> ConnectParams<'a> {
+    /// Build params for a specific host from ScanArgs.
+    pub fn from_args(args: &'a ScanArgs, host: &'a str) -> Self {
+        Self {
+            host,
+            port: args.port,
+            user: &args.user,
+            password: args.password.as_deref(),
+            database: &args.database,
+            timeout: args.timeout,
+        }
+    }
+
+    /// Build params for a socket connection from ScanArgs.
+    pub fn from_socket(args: &'a ScanArgs, socket: &'a str) -> Self {
+        Self {
+            host: socket,
+            port: args.port,
+            user: &args.user,
+            password: args.password.as_deref(),
+            database: &args.database,
+            timeout: args.timeout,
+        }
+    }
+}
+
+/// Establish connection to PostgreSQL.
+pub async fn connect(params: &ConnectParams<'_>, verbose: bool) -> Result<Client, ConnectionError> {
+    let config = build_connection_string(params);
 
     if verbose {
         eprintln!("Connecting with: {}", redact_password(&config));
@@ -24,24 +60,19 @@ pub async fn connect(args: &ScanArgs, verbose: bool) -> Result<Client, Connectio
     Ok(client)
 }
 
-fn build_connection_string(args: &ScanArgs) -> String {
+fn build_connection_string(params: &ConnectParams<'_>) -> String {
     let mut parts = Vec::new();
 
-    if let Some(ref socket) = args.socket {
-        parts.push(format!("host={}", socket));
-    } else if let Some(ref host) = args.host {
-        parts.push(format!("host={}", host));
-    }
+    parts.push(format!("host={}", params.host));
+    parts.push(format!("port={}", params.port));
+    parts.push(format!("user={}", params.user));
+    parts.push(format!("dbname={}", params.database));
 
-    parts.push(format!("port={}", args.port));
-    parts.push(format!("user={}", args.user));
-    parts.push(format!("dbname={}", args.database));
-
-    if let Some(ref password) = args.password {
+    if let Some(password) = params.password {
         parts.push(format!("password={}", password));
     }
 
-    parts.push(format!("connect_timeout={}", args.timeout));
+    parts.push(format!("connect_timeout={}", params.timeout));
 
     parts.join(" ")
 }
@@ -70,11 +101,6 @@ pub async fn query_setting(client: &Client, setting: &str) -> Result<String, cra
         .map_err(|e| crate::error::CheckError::QueryFailed(e.to_string()))?;
 
     Ok(row.get(0))
-}
-
-/// Query the data directory from PostgreSQL
-pub async fn get_data_directory(client: &Client) -> Result<String, crate::error::CheckError> {
-    query_setting(client, "data_directory").await
 }
 
 /// Query the hba_file location from PostgreSQL

@@ -117,10 +117,29 @@ impl CheckResult {
     }
 }
 
-/// Report containing all check results
+/// Results for a single host
+#[derive(Debug, Serialize, Deserialize)]
+pub struct HostReport {
+    pub host: String,
+    pub results: Vec<CheckResult>,
+    pub summary: ScanSummary,
+}
+
+impl HostReport {
+    pub fn new(host: String, results: Vec<CheckResult>) -> Self {
+        let summary = ScanSummary::from_results(&results);
+        Self {
+            host,
+            results,
+            summary,
+        }
+    }
+}
+
+/// Report containing all check results, optionally across multiple hosts.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ScanReport {
-    pub results: Vec<CheckResult>,
+    pub hosts: Vec<HostReport>,
     pub summary: ScanSummary,
 }
 
@@ -133,8 +152,8 @@ pub struct ScanSummary {
     pub high: usize,
 }
 
-impl ScanReport {
-    pub fn new(results: Vec<CheckResult>) -> Self {
+impl ScanSummary {
+    pub fn from_results(results: &[CheckResult]) -> Self {
         let total = results.len();
         let passed = results.iter().filter(|r| r.passed).count();
         let failed = total - passed;
@@ -148,15 +167,30 @@ impl ScanReport {
             .count();
 
         Self {
-            results,
-            summary: ScanSummary {
-                total,
-                passed,
-                failed,
-                critical,
-                high,
-            },
+            total,
+            passed,
+            failed,
+            critical,
+            high,
         }
+    }
+
+    pub fn aggregate(summaries: &[&ScanSummary]) -> Self {
+        Self {
+            total: summaries.iter().map(|s| s.total).sum(),
+            passed: summaries.iter().map(|s| s.passed).sum(),
+            failed: summaries.iter().map(|s| s.failed).sum(),
+            critical: summaries.iter().map(|s| s.critical).sum(),
+            high: summaries.iter().map(|s| s.high).sum(),
+        }
+    }
+}
+
+impl ScanReport {
+    pub fn new(hosts: Vec<HostReport>) -> Self {
+        let refs: Vec<&ScanSummary> = hosts.iter().map(|h| &h.summary).collect();
+        let summary = ScanSummary::aggregate(&refs);
+        Self { hosts, summary }
     }
 
     pub fn exit_code(&self) -> i32 {
@@ -170,18 +204,53 @@ impl ScanReport {
     }
 
     pub fn print(&self) {
-        println!();
-        for result in &self.results {
-            result.print();
+        let multi = self.hosts.len() > 1;
+
+        for host_report in &self.hosts {
+            if multi {
+                println!();
+                println!(
+                    "{}",
+                    format!("━━━ {} ━━━", host_report.host).bold().cyan()
+                );
+            }
+
+            println!();
+            for result in &host_report.results {
+                result.print();
+            }
+
+            if multi {
+                println!();
+                println!(
+                    "  {} passed, {} failed ({} critical, {} high)",
+                    host_report.summary.passed.to_string().green(),
+                    host_report.summary.failed.to_string().red(),
+                    host_report.summary.critical,
+                    host_report.summary.high
+                );
+            }
         }
+
         println!();
-        println!(
-            "Summary: {} passed, {} failed ({} critical, {} high)",
-            self.summary.passed.to_string().green(),
-            self.summary.failed.to_string().red(),
-            self.summary.critical,
-            self.summary.high
-        );
+        if multi {
+            println!(
+                "Overall: {} hosts scanned — {} passed, {} failed ({} critical, {} high)",
+                self.hosts.len(),
+                self.summary.passed.to_string().green(),
+                self.summary.failed.to_string().red(),
+                self.summary.critical,
+                self.summary.high
+            );
+        } else {
+            println!(
+                "Summary: {} passed, {} failed ({} critical, {} high)",
+                self.summary.passed.to_string().green(),
+                self.summary.failed.to_string().red(),
+                self.summary.critical,
+                self.summary.high
+            );
+        }
     }
 
     pub fn print_json(&self) -> Result<(), serde_json::Error> {

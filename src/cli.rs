@@ -4,6 +4,20 @@ use clap::{Parser, Subcommand, ValueEnum};
 #[derive(Parser, Debug)]
 #[command(name = "pg-harden")]
 #[command(author, version, about, long_about = None)]
+#[command(after_help = "\
+Use <COMMAND> --help for more information on a specific command.
+
+Examples:
+  pg-harden scan -H 192.168.1.100              Scan a single host
+  pg-harden scan -H db.example.com              Scan by hostname (DNS resolved)
+  pg-harden scan -H 10.0.0.0/24                Scan a subnet via CIDR
+  pg-harden scan -H fd00::/120                  Scan an IPv6 CIDR block
+  pg-harden scan -H 10.0.0.1 -H 10.0.0.2       Scan multiple targets
+  pg-harden scan -H db.local -f json            Output results as JSON
+  pg-harden scan -H db.local -c auth-scram      Run a specific check only
+  pg-harden scan --offline --hba-file /etc/pg_hba.conf
+                                                File-based checks without a connection
+  pg-harden list                                List all available checks")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
@@ -24,9 +38,9 @@ pub enum Commands {
 
 #[derive(Parser, Debug)]
 pub struct ScanArgs {
-    /// PostgreSQL host
-    #[arg(short = 'H', long, env = "PGHOST")]
-    pub host: Option<String>,
+    /// Target host(s): IP address, hostname, or CIDR block. Repeatable.
+    #[arg(short = 'H', long = "host", num_args = 1..)]
+    pub hosts: Vec<String>,
 
     /// PostgreSQL port
     #[arg(short = 'p', long, env = "PGPORT", default_value = "5432")]
@@ -84,17 +98,8 @@ pub enum OutputFormat {
 }
 
 impl ScanArgs {
-    /// Determine if we should use socket connection
-    pub fn use_socket(&self) -> bool {
-        self.socket.is_some() && self.host.is_none()
-    }
-
-    /// Get the connection host (socket path or TCP host)
-    pub fn connection_host(&self) -> Option<&str> {
-        if let Some(ref socket) = self.socket {
-            Some(socket.as_str())
-        } else {
-            self.host.as_deref()
-        }
+    /// Whether any connection target is specified (host or socket).
+    pub fn has_target(&self) -> bool {
+        !self.hosts.is_empty() || self.socket.is_some()
     }
 }
