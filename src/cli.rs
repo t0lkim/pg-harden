@@ -8,16 +8,15 @@ use clap::{Parser, Subcommand, ValueEnum};
 Use <COMMAND> --help for more information on a specific command.
 
 Examples:
-  pg-harden scan -H 192.168.1.100              Scan a single host
-  pg-harden scan -H db.example.com              Scan by hostname (DNS resolved)
-  pg-harden scan -H 10.0.0.0/24                Scan a subnet via CIDR
-  pg-harden scan -H fd00::/120                  Scan an IPv6 CIDR block
-  pg-harden scan -H 10.0.0.1 -H 10.0.0.2       Scan multiple targets
-  pg-harden scan -H db.local -f json            Output results as JSON
-  pg-harden scan -H db.local -c auth-scram      Run a specific check only
-  pg-harden scan --offline --hba-file /etc/pg_hba.conf
-                                                File-based checks without a connection
-  pg-harden list                                List all available checks")]
+  pg-harden scan -H 192.168.1.100                       Scan a single host
+  pg-harden scan -H db.example.com                      Scan by hostname (DNS resolved)
+  pg-harden scan -H 10.0.0.0/24                         Scan a subnet via CIDR
+  pg-harden scan -H fd00::/120                          Scan an IPv6 CIDR block
+  pg-harden scan -H 10.0.0.1 -H 10.0.0.2                Scan multiple targets
+  pg-harden scan -H db.local -f json                    Output results as JSON
+  pg-harden scan -H db.local -c auth-scram              Run a specific check only
+  pg-harden scan --offline --hba-file /etc/pg_hba.conf  File-based checks without a connection
+  pg-harden list                                        List all available checks")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
