@@ -66,12 +66,34 @@
 - [ ] Backup retention policy configured
 - [ ] Restore tested (documented last successful restore date)
 
-### PostgreSQL HA / Load Balancing (Future)
-- [ ] Streaming replication configured (primary → standby)
-- [ ] Synchronous commit for critical databases
-- [ ] pgBouncer or PgPool-II for connection pooling
-- [ ] Automatic failover via Patroni or repmgr
-- [ ] Read replicas for read-heavy workloads
+### PostgreSQL HA / Replication / Load Balancing
+
+Core database for all internal services — must survive single node failure.
+
+**Architecture:** Primary + standby on separate PVE nodes, automatic failover, connection pooling.
+
+- [ ] Streaming replication: primary (node-a) → standby (node-b), async by default
+- [ ] Synchronous commit for critical databases (NetBox, future services)
+- [ ] pgBouncer for connection pooling (reduces PG connection overhead)
+- [ ] Automatic failover via Patroni (etcd-based) or repmgr
+- [ ] Read replicas for read-heavy workloads (NetBox API queries)
+- [ ] VIP for client connections (keepalived or Patroni-managed)
+- [ ] pg_basebackup for standby initialisation
+- [ ] WAL archiving to NFS-PVE-00 for PITR (point-in-time recovery)
+- [ ] Monitoring: replication lag, connection count, WAL size
+- [ ] pg-harden checks for replication security (SSL between nodes, replication user permissions)
+
+**Deployment plan:**
+| Instance | Node | IP | Role |
+|----------|------|----|------|
+| pg-primary | node-a | 10.0.0.10 | Primary (read-write) |
+| pg-standby | node-b | 10.0.0.11 | Standby (read-only, hot standby) |
+| pg-vip | — | 10.0.0.12 | Client VIP (Patroni/keepalived) |
+| pgbouncer | both | :6432 | Connection pooler |
+
+**Services connecting to PostgreSQL:**
+- NetBox (IPAM, DCIM)
+- Future: OpenBao audit backend, Forgejo, monitoring
 
 ---
 
