@@ -1,12 +1,8 @@
 # Changelog — pg-harden
 
-All notable changes to this project will be documented in this file.
+## v0.3.0 (2026-03-20)
 
-## [Unreleased]
-
-### 2026-03-20
-
-#### Added
+### Added
 - ARCH-001 architecture diagram
 - specs/DENY-ALL-HARDENING.md — deny-all PostgreSQL security lockdown spec
   - Connection controls, authentication, privilege minimisation
@@ -14,11 +10,9 @@ All notable changes to this project will be documented in this file.
   - BCP: backup/restore, HA/load balancing considerations
   - Internet-facing security checklist
 
-#### Changed
+### Changed
 - Rebuilt release binary (broken symlink from prior migration)
 - Tested against PostgreSQL 18.3 on hardened Debian 13 LXC: 2/2 checks pass
-  - SCRAM-SHA-256 authentication: PASS
-  - SSL enabled: PASS
 
 ## v0.2.1 (2026-02-11)
 
@@ -28,15 +22,15 @@ All notable changes to this project will be documented in this file.
 ## v0.2.0 (2026-02-11)
 
 ### Added
-- CIDR target support — `-H` accepts IPv4 and IPv6 CIDR notation (e.g. `192.168.1.0/24`, `fd00::/120`). Blocks expanded to individual host addresses via `ipnet` crate. Network and broadcast addresses excluded automatically.
-- Hostname DNS resolution — `-H` accepts hostnames (e.g. `db.example.com`). Dual-stack hosts scan all resolved IPs. Deduplication prevents scanning the same IP twice.
-- Multi-target scanning — `-H` is repeatable: `-H 10.0.0.1 -H 10.0.0.2 -H db.local`. CIDR blocks, hostnames, and bare IPs can be combined freely.
-- Per-host report grouping — multi-target text output shows per-host headers with individual summaries plus aggregate "Overall" line. JSON output uses `hosts[]` array.
+- CIDR target support — `-H` accepts IPv4 and IPv6 CIDR notation (e.g. `192.168.1.0/24`, `fd00::/120`)
+- Hostname DNS resolution — `-H` accepts hostnames (e.g. `db.example.com`), dual-stack supported
+- Multi-target scanning — `-H` is repeatable, CIDR blocks, hostnames, and bare IPs combine freely
+- Per-host report grouping — per-host headers with individual summaries plus aggregate "Overall" line
 - 9 usage examples in `pg-harden --help`
 
 ### Architecture
 - `src/target.rs` — target resolution pipeline (CIDR expansion, DNS resolution)
-- `src/connection.rs` — new `ConnectParams` struct, decoupled from `ScanArgs`
+- `src/connection.rs` — `ConnectParams` struct, decoupled from `ScanArgs`
 - `src/output.rs` — `HostReport` sub-type, `ScanSummary::aggregate()`, per-host text/JSON
 
 ## v0.1.0 (2026-02-10)
