@@ -79,16 +79,16 @@ Core database for all internal services — must survive single node failure.
 - [ ] Read replicas for read-heavy workloads (NetBox API queries)
 - [ ] VIP for client connections (keepalived or Patroni-managed)
 - [ ] pg_basebackup for standby initialisation
-- [ ] WAL archiving to NFS-PVE-00 for PITR (point-in-time recovery)
+- [ ] WAL archiving to NFS for PITR (point-in-time recovery)
 - [ ] Monitoring: replication lag, connection count, WAL size
 - [ ] pg-harden checks for replication security (SSL between nodes, replication user permissions)
 
 **Deployment plan:**
 | Instance | Node | IP | Role |
 |----------|------|----|------|
-| pg-primary | node-a | 10.0.0.10 | Primary (read-write) |
-| pg-standby | node-b | 10.0.0.11 | Standby (read-only, hot standby) |
-| pg-vip | — | 10.0.0.12 | Client VIP (Patroni/keepalived) |
+| pg-primary | node-a | 10.0.1.10 | Primary (read-write) |
+| pg-standby | node-b | 10.0.1.11 | Standby (read-only, hot standby) |
+| pg-vip | — | 10.0.1.12 | Client VIP (Patroni/keepalived) |
 | pgbouncer | both | :6432 | Connection pooler |
 
 **Services connecting to PostgreSQL:**
@@ -107,7 +107,7 @@ When any application backed by this PostgreSQL instance is exposed to the intern
 4. **pgaudit on all DML** for forensic capability
 5. **WAL archiving** for point-in-time recovery after compromise
 6. **Separate database per application** with isolated users (no cross-database access)
-7. **Network segmentation** — PostgreSQL on Data VLAN (10.0.0.0/24), not management
+7. **Network segmentation** — PostgreSQL on a dedicated data VLAN, not management
 
 ---
 
