@@ -37,7 +37,7 @@ impl SecurityCheck for AuthPgHbaCheck {
         config: &ScanConfig,
     ) -> Result<CheckResult, CheckError> {
         let hba_path = pghba::resolve_hba_path(client, config).await?;
-        let (entries, warnings) = pghba::load_hba_entries(&hba_path).await;
+        let (entries, warnings) = pghba::load_hba_entries(&hba_path).await?;
 
         let issues: Vec<String> = entries
             .iter()

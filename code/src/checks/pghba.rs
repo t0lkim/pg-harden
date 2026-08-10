@@ -212,7 +212,15 @@ pub async fn resolve_hba_path(
 ///
 /// Returns the parsed entries plus warnings for includes that could not
 /// be read (missing `include` targets, unreadable directories).
-pub async fn load_hba_entries(path: &str) -> (Vec<HbaEntry>, Vec<String>) {
+///
+/// Errors when the main file itself is unreadable — a vacuous result set
+/// must never masquerade as a passing configuration (e.g. when scanning
+/// remotely, where the server's hba path does not exist locally).
+pub async fn load_hba_entries(path: &str) -> Result<(Vec<HbaEntry>, Vec<String>), CheckError> {
+    fs::metadata(path)
+        .await
+        .map_err(|e| CheckError::FileRead(format!("{}: {}", path, e)))?;
+
     let mut entries = Vec::new();
     let mut warnings = Vec::new();
     let mut visited = HashSet::new();
@@ -226,7 +234,7 @@ pub async fn load_hba_entries(path: &str) -> (Vec<HbaEntry>, Vec<String>) {
     )
     .await;
 
-    (entries, warnings)
+    Ok((entries, warnings))
 }
 
 async fn load_file(
@@ -422,7 +430,7 @@ mod tests {
         std::fs::write(&main, "local all all peer\ninclude extra.conf\n").unwrap();
         std::fs::write(&extra, "host all all 10.0.0.0/8 md5\n").unwrap();
 
-        let (entries, warnings) = load_hba_entries(main.to_str().unwrap()).await;
+        let (entries, warnings) = load_hba_entries(main.to_str().unwrap()).await.unwrap();
         assert!(warnings.is_empty(), "unexpected warnings: {:?}", warnings);
         assert_eq!(entries.len(), 2);
         assert_eq!(entries[1].method, "md5");
@@ -441,7 +449,7 @@ mod tests {
         std::fs::write(confd.join("01-first.conf"), "host a a 10.0.0.1/32 md5\n").unwrap();
         std::fs::write(confd.join("ignored.txt"), "host x x 10.0.0.9/32 md5\n").unwrap();
 
-        let (entries, warnings) = load_hba_entries(main.to_str().unwrap()).await;
+        let (entries, warnings) = load_hba_entries(main.to_str().unwrap()).await.unwrap();
         assert!(warnings.is_empty(), "unexpected warnings: {:?}", warnings);
         assert_eq!(entries.len(), 2);
         assert_eq!(entries[0].database, "a");
@@ -454,7 +462,7 @@ mod tests {
         let main = dir.path().join("pg_hba.conf");
         std::fs::write(&main, "local all all peer\ninclude missing.conf\n").unwrap();
 
-        let (entries, warnings) = load_hba_entries(main.to_str().unwrap()).await;
+        let (entries, warnings) = load_hba_entries(main.to_str().unwrap()).await.unwrap();
         assert_eq!(entries.len(), 1);
         assert_eq!(warnings.len(), 1);
         assert!(warnings[0].contains("missing.conf"));
@@ -468,7 +476,7 @@ mod tests {
         std::fs::write(&a, "include b.conf\nlocal all all peer\n").unwrap();
         std::fs::write(&b, "include a.conf\n").unwrap();
 
-        let (entries, _) = load_hba_entries(a.to_str().unwrap()).await;
+        let (entries, _) = load_hba_entries(a.to_str().unwrap()).await.unwrap();
         assert_eq!(entries.len(), 1);
     }
 }

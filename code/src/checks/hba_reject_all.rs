@@ -41,7 +41,7 @@ impl SecurityCheck for HbaRejectAllCheck {
         config: &ScanConfig,
     ) -> Result<CheckResult, CheckError> {
         let hba_path = pghba::resolve_hba_path(client, config).await?;
-        let (entries, _) = pghba::load_hba_entries(&hba_path).await;
+        let (entries, _) = pghba::load_hba_entries(&hba_path).await?;
 
         let problems = analyze_reject_all(&entries);
 

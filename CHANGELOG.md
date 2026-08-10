@@ -16,6 +16,7 @@
 - `ident` authentication is now flagged as dangerous alongside `trust`/`password`/`md5`
 - Connection parameters built with `tokio_postgres::Config` instead of string formatting (passwords/hosts with spaces no longer break)
 - The scanner can now audit servers that enforce SSL (`hostssl`-only pg_hba) — previously it connected plaintext-only
+- File-based checks (`auth-pghba`, `hba-reject-all`) now error instead of silently passing when pg_hba.conf itself is unreadable — a remote scan previously `pass`ed a configuration it never read (the server's hba path doesn't exist locally)
 
 ### Changed
 - `auth-scram` and `auth-pghba` severities raised from HIGH to CRITICAL, matching specs/ARCHITECTURE.md
