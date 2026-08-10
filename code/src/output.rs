@@ -61,12 +61,7 @@ impl CheckResult {
         }
     }
 
-    pub fn fail(
-        id: &str,
-        name: &str,
-        severity: Severity,
-        message: impl Into<String>,
-    ) -> Self {
+    pub fn fail(id: &str, name: &str, severity: Severity, message: impl Into<String>) -> Self {
         Self {
             check_id: id.to_string(),
             check_name: name.to_string(),
@@ -109,10 +104,10 @@ impl CheckResult {
             }
         }
 
-        if !self.passed {
-            if let Some(remediation) = &self.remediation {
-                println!("    {} {}", "Fix:".yellow(), remediation);
-            }
+        if !self.passed
+            && let Some(remediation) = &self.remediation
+        {
+            println!("    {} {}", "Fix:".yellow(), remediation);
         }
     }
 }
@@ -209,10 +204,7 @@ impl ScanReport {
         for host_report in &self.hosts {
             if multi {
                 println!();
-                println!(
-                    "{}",
-                    format!("━━━ {} ━━━", host_report.host).bold().cyan()
-                );
+                println!("{}", format!("━━━ {} ━━━", host_report.host).bold().cyan());
             }
 
             println!();

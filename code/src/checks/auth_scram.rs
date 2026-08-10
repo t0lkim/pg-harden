@@ -20,7 +20,7 @@ impl SecurityCheck for AuthScramCheck {
     }
 
     fn severity(&self) -> Severity {
-        Severity::High
+        Severity::Critical
     }
 
     fn description(&self) -> &'static str {

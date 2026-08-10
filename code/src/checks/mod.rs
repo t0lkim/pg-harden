@@ -1,5 +1,7 @@
 pub mod auth_pghba;
 pub mod auth_scram;
+pub mod hba_reject_all;
+pub mod pghba;
 pub mod ssl_enabled;
 
 use crate::config::ScanConfig;
@@ -47,6 +49,7 @@ impl CheckRegistry {
             Box::new(auth_scram::AuthScramCheck),
             Box::new(ssl_enabled::SslEnabledCheck),
             Box::new(auth_pghba::AuthPgHbaCheck),
+            Box::new(hba_reject_all::HbaRejectAllCheck),
         ];
 
         Self { checks }

@@ -1,6 +1,6 @@
 [package]
 name = "pg-harden"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2024"
 authors = ["Mike Lott"]
 description = "PostgreSQL security hardening scanner"
@@ -12,15 +12,17 @@ categories = ["command-line-utilities", "database"]
 [dependencies]
 clap = { version = "4.5", features = ["derive", "env"] }
 tokio = { version = "1.49", features = ["rt-multi-thread", "macros", "fs"] }
-tokio-postgres = { version = "0.7", features = ["with-serde_json-1"] }
+tokio-postgres = "0.7"
+tokio-postgres-rustls = { version = "0.14", features = ["ring"] }
+rustls = "0.23"
+webpki-roots = "1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-toml = "0.8"
 colored = "3.0"
 thiserror = "2.0"
-anyhow = "1.0"
 async-trait = "0.1"
 ipnet = "2"
+futures = "0.3"
 
 [dev-dependencies]
 tempfile = "3.15"

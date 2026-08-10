@@ -44,13 +44,12 @@ impl SecurityCheck for SslEnabledCheck {
                 "SSL is enabled",
             ))
         } else {
-            Ok(CheckResult::fail(
-                self.id(),
-                self.name(),
-                self.severity(),
-                "SSL is disabled",
+            Ok(
+                CheckResult::fail(self.id(), self.name(), self.severity(), "SSL is disabled")
+                    .with_remediation(
+                        "Set ssl = on in postgresql.conf and configure SSL certificates",
+                    ),
             )
-            .with_remediation("Set ssl = on in postgresql.conf and configure SSL certificates"))
         }
     }
 }

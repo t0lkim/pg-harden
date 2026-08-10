@@ -5,15 +5,6 @@ use thiserror::Error;
 pub enum ConnectionError {
     #[error("Failed to connect to PostgreSQL: {0}")]
     Connection(String),
-
-    #[error("Socket not found: {0}")]
-    SocketNotFound(String),
-
-    #[error("Authentication failed: {0}")]
-    Authentication(String),
-
-    #[error("Connection timeout after {0} seconds")]
-    Timeout(u64),
 }
 
 /// Check execution errors
@@ -24,12 +15,6 @@ pub enum CheckError {
 
     #[error("File read error: {0}")]
     FileRead(String),
-
-    #[error("Parse error: {0}")]
-    Parse(String),
-
-    #[error("Permission denied: {0}")]
-    PermissionDenied(String),
 
     #[error("Check requires database connection")]
     RequiresConnection,

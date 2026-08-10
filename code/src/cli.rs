@@ -14,6 +14,7 @@ Examples:
   pg-harden scan -H fd00::/120                          Scan an IPv6 CIDR block
   pg-harden scan -H 10.0.0.1 -H 10.0.0.2                Scan multiple targets
   pg-harden scan -H db.local -f json                    Output results as JSON
+  pg-harden scan -H db.local --ssl-mode require         Require TLS for the scan connection
   pg-harden scan -H db.local -c auth-scram              Run a specific check only
   pg-harden scan --offline --hba-file /etc/pg_hba.conf  File-based checks without a connection
   pg-harden list                                        List all available checks")]
@@ -29,7 +30,7 @@ pub struct Cli {
 #[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Scan PostgreSQL instance for security issues
-    Scan(ScanArgs),
+    Scan(Box<ScanArgs>),
 
     /// List available security checks
     List,
@@ -38,6 +39,7 @@ pub enum Commands {
 #[derive(Parser, Debug)]
 pub struct ScanArgs {
     /// Target host(s): IP address, hostname, or CIDR block. Repeatable.
+    /// Falls back to the PGHOST environment variable if omitted.
     #[arg(short = 'H', long = "host", num_args = 1..)]
     pub hosts: Vec<String>,
 
@@ -57,9 +59,13 @@ pub struct ScanArgs {
     #[arg(short = 'd', long, env = "PGDATABASE", default_value = "postgres")]
     pub database: String,
 
-    /// Unix socket directory
-    #[arg(short = 's', long, env = "PGHOST")]
+    /// Unix socket directory (cannot be combined with -H)
+    #[arg(short = 's', long)]
     pub socket: Option<String>,
+
+    /// TLS mode for the scan connection itself
+    #[arg(long, value_enum, env = "PGSSLMODE", default_value = "prefer")]
+    pub ssl_mode: SslMode,
 
     /// Path to pg_hba.conf (auto-detected if not specified)
     #[arg(long)]
@@ -85,6 +91,10 @@ pub struct ScanArgs {
     #[arg(long, default_value = "10")]
     pub timeout: u64,
 
+    /// Allow CIDR blocks larger than 256 hosts
+    #[arg(long)]
+    pub allow_large: bool,
+
     /// Continue even if connection fails (file-based checks only)
     #[arg(long)]
     pub offline: bool,
@@ -94,6 +104,19 @@ pub struct ScanArgs {
 pub enum OutputFormat {
     Text,
     Json,
+}
+
+/// TLS mode for the scanner's own connection (psql-style semantics).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum SslMode {
+    /// Never use TLS
+    Disable,
+    /// Try TLS, fall back to plaintext if the server does not support it
+    Prefer,
+    /// Require TLS, but do not verify the certificate chain
+    Require,
+    /// Require TLS and verify the certificate chain and hostname
+    VerifyFull,
 }
 
 impl ScanArgs {

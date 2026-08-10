@@ -1,5 +1,3 @@
-use serde::{Deserialize, Serialize};
-
 /// Configuration for a scan operation
 #[derive(Debug, Clone, Default)]
 pub struct ScanConfig {
@@ -25,10 +23,10 @@ pub struct ScanConfig {
 impl ScanConfig {
     pub fn should_run_check(&self, check_id: &str) -> bool {
         // If exclude list contains this check, skip it
-        if let Some(ref exclude) = self.exclude_checks {
-            if exclude.iter().any(|e| e == check_id) {
-                return false;
-            }
+        if let Some(ref exclude) = self.exclude_checks
+            && exclude.iter().any(|e| e == check_id)
+        {
+            return false;
         }
 
         // If include list is specified, only run those
@@ -39,29 +37,4 @@ impl ScanConfig {
         // Default: run all checks
         true
     }
-}
-
-/// TOML configuration file structure (for future use)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConfigFile {
-    #[serde(default)]
-    pub connection: ConnectionConfig,
-
-    #[serde(default)]
-    pub checks: ChecksConfig,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct ConnectionConfig {
-    pub host: Option<String>,
-    pub port: Option<u16>,
-    pub user: Option<String>,
-    pub database: Option<String>,
-    pub socket: Option<String>,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct ChecksConfig {
-    pub include: Option<Vec<String>>,
-    pub exclude: Option<Vec<String>>,
 }

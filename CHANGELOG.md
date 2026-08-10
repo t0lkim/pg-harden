@@ -1,5 +1,30 @@
 # Changelog — pg-harden
 
+## v0.4.0 (2026-08-10)
+
+### Added
+- `hba-reject-all` check (HIGH, enabled by default) — verifies pg_hba.conf ends with `reject` rules for `0.0.0.0/0` and `::/0`; flags unreachable entries after the reject-all
+- `--ssl-mode` flag (env `PGSSLMODE`) — psql-style TLS for the scanner's own connection: `disable`, `prefer` (default), `require`, `verify-full` (rustls + Mozilla CA roots)
+- pg_hba.conf `include` / `include_if_exists` / `include_dir` directive expansion (depth-limited, cycle-safe, `include_dir` files processed alphabetically)
+- `--allow-large` flag required for CIDR blocks over 256 hosts
+- Concurrent scanning — targets scanned 16 at a time (previously sequential)
+
+### Fixed
+- `PGHOST` env var no longer shadows explicit `-H` targets (was bound to `--socket`); it now acts as the target fallback when no `-H`/`-s` is given
+- `-s`/`--socket` and `-H`/`--host` now error when combined instead of silently ignoring one
+- pg_hba.conf parser handles the separate-netmask address form (`host db user 10.0.0.0 255.0.0.0 md5`), folding it to CIDR
+- `ident` authentication is now flagged as dangerous alongside `trust`/`password`/`md5`
+- Connection parameters built with `tokio_postgres::Config` instead of string formatting (passwords/hosts with spaces no longer break)
+- The scanner can now audit servers that enforce SSL (`hostssl`-only pg_hba) — previously it connected plaintext-only
+
+### Changed
+- `auth-scram` and `auth-pghba` severities raised from HIGH to CRITICAL, matching specs/ARCHITECTURE.md
+- Binary now uses the library crate instead of compiling every module twice
+
+### Removed
+- Unused dependencies: `anyhow`, `toml`, tokio-postgres `with-serde_json-1` feature
+- Dead code: `ConfigFile`/`ConnectionConfig`/`ChecksConfig` structs, never-constructed error variants
+
 ## v0.3.0 (2026-03-20)
 
 ### Added
